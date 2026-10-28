@@ -1,0 +1,298 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Draft XI — Head to Head</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+  <!-- ============ SCREEN 1: LANDING ============ -->
+  <section id="screen-landing" class="screen active">
+    <div class="landing-box">
+      <h1>⚽ Draft XI</h1>
+      <p class="subtitle">Head to Head · Formasi 4-3-3</p>
+      <p class="desc">
+        Pilih 11 pemain terbaikmu dari 5 liga top Eropa.<br>
+        Lalu adu kekuatan dengan tim lawan.
+      </p>
+      <button class="btn-primary" onclick="goTo('screen-draft-a')">
+        Mulai Draft Tim A →
+      </button>
+    </div>
+  </section>
+
+  <!-- ============ SCREEN 2: DRAFT TIM A ============ -->
+  <section id="screen-draft-a" class="screen">
+    <header class="draft-header">
+      <div class="team-label team-a">🔵 TIM A</div>
+      <h2>Susun Kesebelasan — Formasi 4-3-3</h2>
+      <div class="counter">0 / 16 dipilih</div>
+    </header>
+
+    <div class="draft-body">
+      <!-- Lapangan -->
+      <div class="pitch-wrapper">
+        <div class="pitch">
+          <div class="pitch-line pitch-half"></div>
+          <div class="pitch-circle"></div>
+
+          <!-- Baris penyerang -->
+          <div class="row row-attack">
+            <div class="slot" data-pos="LW"><span class="slot-pos">LW</span></div>
+            <div class="slot" data-pos="ST"><span class="slot-pos">ST</span></div>
+            <div class="slot" data-pos="RW"><span class="slot-pos">RW</span></div>
+          </div>
+
+          <!-- Baris tengah -->
+          <div class="row row-mid">
+            <div class="slot" data-pos="CM"><span class="slot-pos">CM</span></div>
+            <div class="slot" data-pos="CDM"><span class="slot-pos">CDM</span></div>
+            <div class="slot" data-pos="CM"><span class="slot-pos">CM</span></div>
+          </div>
+
+          <!-- Baris bek -->
+          <div class="row row-def">
+            <div class="slot" data-pos="LB"><span class="slot-pos">LB</span></div>
+            <div class="slot" data-pos="CB"><span class="slot-pos">CB</span></div>
+            <div class="slot" data-pos="CB"><span class="slot-pos">CB</span></div>
+            <div class="slot" data-pos="RB"><span class="slot-pos">RB</span></div>
+          </div>
+
+                  <!-- Kiper -->
+          <div class="row row-gk">
+            <div class="slot" data-pos="GK"><span class="slot-pos">GK</span></div>
+          </div>
+        </div>
+
+        <!-- 🆕 AREA BENCH (Cadangan) -->
+        <div class="bench-section">
+          <h4>🪑 Pemain Cadangan (5)</h4>
+          <div class="bench-row" id="bench-a">
+            <div class="bench-slot" data-bench="0"><span class="slot-pos">Bench 1</span></div>
+            <div class="bench-slot" data-bench="1"><span class="slot-pos">Bench 2</span></div>
+            <div class="bench-slot" data-bench="2"><span class="slot-pos">Bench 3</span></div>
+            <div class="bench-slot" data-bench="3"><span class="slot-pos">Bench 4</span></div>
+            <div class="bench-slot" data-bench="4"><span class="slot-pos">Bench 5</span></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Pool pemain -->
+      <div class="pool-wrapper">
+      <div class="pool-wrapper">
+        <h3>Pemain Tersedia</h3>
+        <p class="pool-hint">Klik pemain untuk mengisi slot yang dipilih.</p>
+        <div class="pool-list" id="pool-a">
+          <!-- nanti diisi via JS -->
+          <div class="player-card placeholder">(pool pemain akan muncul di sini)</div>
+        </div>
+      </div>
+    </div>
+
+    <footer class="draft-footer">
+      <button class="btn-secondary" onclick="goTo('screen-landing')">← Kembali</button>
+      <button class="btn-primary" onclick="goTo('screen-draft-b')">Selesai Draft A →</button>
+    </footer>
+  </section>
+
+  <!-- ============ SCREEN 3: DRAFT TIM B ============ -->
+  <section id="screen-draft-b" class="screen">
+    <header class="draft-header">
+      <div class="team-label team-b">🔴 TIM B</div>
+      <h2>Susun Kesebelasan — Formasi 4-3-3</h2>
+      <div class="counter">0 / 16 dipilih</div>
+    </header>
+
+    <div class="draft-body">
+      <div class="pitch-wrapper">
+        <div class="pitch">
+          <div class="pitch-line pitch-half"></div>
+          <div class="pitch-circle"></div>
+
+          <div class="row row-attack">
+            <div class="slot" data-pos="LW"><span class="slot-pos">LW</span></div>
+            <div class="slot" data-pos="ST"><span class="slot-pos">ST</span></div>
+            <div class="slot" data-pos="RW"><span class="slot-pos">RW</span></div>
+          </div>
+          <div class="row row-mid">
+            <div class="slot" data-pos="CM"><span class="slot-pos">CM</span></div>
+            <div class="slot" data-pos="CDM"><span class="slot-pos">CDM</span></div>
+            <div class="slot" data-pos="CM"><span class="slot-pos">CM</span></div>
+          </div>
+          <div class="row row-def">
+            <div class="slot" data-pos="LB"><span class="slot-pos">LB</span></div>
+            <div class="slot" data-pos="CB"><span class="slot-pos">CB</span></div>
+            <div class="slot" data-pos="CB"><span class="slot-pos">CB</span></div>
+            <div class="slot" data-pos="RB"><span class="slot-pos">RB</span></div>
+          </div>
+                    <div class="row row-gk">
+            <div class="slot" data-pos="GK"><span class="slot-pos">GK</span></div>
+          </div>
+        </div>
+
+        <!-- 🆕 AREA BENCH TIM B -->
+        <div class="bench-section">
+          <h4>🪑 Pemain Cadangan (5)</h4>
+          <div class="bench-row" id="bench-b">
+            <div class="bench-slot" data-bench="0"><span class="slot-pos">Bench 1</span></div>
+            <div class="bench-slot" data-bench="1"><span class="slot-pos">Bench 2</span></div>
+            <div class="bench-slot" data-bench="2"><span class="slot-pos">Bench 3</span></div>
+            <div class="bench-slot" data-bench="3"><span class="slot-pos">Bench 4</span></div>
+            <div class="bench-slot" data-bench="4"><span class="slot-pos">Bench 5</span></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="pool-wrapper">
+        <h3>Pemain Tersedia</h3>
+        <p class="pool-hint">Klik pemain untuk mengisi slot yang dipilih.</p>
+        <div class="pool-list" id="pool-b">
+          <div class="player-card placeholder">(pool pemain akan muncul di sini)</div>
+        </div>
+      </div>
+    </div>
+
+    <footer class="draft-footer">
+      <button class="btn-secondary" onclick="goTo('screen-draft-a')">← Kembali</button>
+      <button class="btn-primary" onclick="goTo('screen-preview')">Lihat Preview →</button>
+    </footer>
+  </section>
+
+  <!-- ============ SCREEN 4: PREVIEW ============ -->
+  <section id="screen-preview" class="screen">
+    <header class="draft-header">
+      <h2>Preview Pertandingan</h2>
+    </header>
+
+    <div class="preview-body">
+      <div class="preview-team team-a">
+        <h3>🔵 TIM A</h3>
+        <ul class="lineup-list">
+          <li class="placeholder">(lineup akan tampil di sini)</li>
+        </ul>
+      </div>
+      <div class="preview-vs">VS</div>
+      <div class="preview-team team-b">
+        <h3>🔴 TIM B</h3>
+        <ul class="lineup-list">
+          <li class="placeholder">(lineup akan tampil di sini)</li>
+        </ul>
+      </div>
+    </div>
+
+    <footer class="draft-footer">
+      <button class="btn-secondary" onclick="goTo('screen-draft-b')">← Kembali</button>
+      <button class="btn-primary" onclick="startMatch()">⚡ Kick Off!</button>
+    </footer>
+  </section>
+
+  <!-- ============ SCREEN 5: LOADING ============ -->
+  <section id="screen-loading" class="screen">
+    <div class="live-match-wrapper">
+        <!-- Papan Skor Mini -->
+      <div class="scoreboard">
+        <div class="sb-team team-a">TIM A</div>
+        <div class="sb-score" id="live-score">0 - 0</div>
+        <div class="sb-team team-b">TIM B</div>
+        <div class="sb-clock" id="live-clock">0'</div>
+      </div>
+
+      <!-- 🆕 Mini Pitch untuk Animasi Bola -->
+      <div class="mini-pitch-wrapper">
+        <div class="mini-pitch">
+          <div class="mini-goal left"></div>
+          <div class="mini-goal right"></div>
+          <div class="mini-ball" id="mini-ball">⚽</div>
+        </div>
+      </div>
+
+      <!-- Ticker Komentar Live -->
+      <div class="live-ticker" id="live-ticker">
+        <div class="ticker-placeholder">Menunggu kick-off...</div>
+      </div>
+      
+      <!-- Progress Bar 30 detik -->
+      <div class="progress-bar-wrapper">
+        <div class="progress-bar" id="match-progress"></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ SCREEN 6: RESULT ============ -->
+  <section id="screen-result" class="screen">
+    <header class="draft-header">
+      <h2>Hasil Pertandingan</h2>
+    </header>
+
+    <div class="result-body">
+      <!-- Skor -->
+      <div class="score-box">
+        <div class="score-team team-a">TIM A</div>
+        <div class="score-number">0 - 0</div>
+        <div class="score-team team-b">TIM B</div>
+      </div>
+      <p class="result-note">(skor & statistik akan muncul setelah engine simulasi dibuat)</p>
+
+      <!-- Statistik -->
+      <div class="stats-box">
+        <h3>Statistik Pertandingan</h3>
+        <div class="stat-row">
+          <span class="stat-val">--%</span>
+          <span class="stat-label">Possession</span>
+          <span class="stat-val">--%</span>
+        </div>
+        <div class="stat-row">
+          <span class="stat-val">--</span>
+          <span class="stat-label">Total Shots</span>
+          <span class="stat-val">--</span>
+        </div>
+        <div class="stat-row">
+          <span class="stat-val">--</span>
+          <span class="stat-label">Shots on Target</span>
+          <span class="stat-val">--</span>
+        </div>
+        <div class="stat-row">
+          <span class="stat-val">--</span>
+          <span class="stat-label">Shots off Target</span>
+          <span class="stat-val">--</span>
+        </div>
+        <!-- 🆕 Baris xG -->
+        <div class="stat-row">
+          <span class="stat-val">--</span>
+          <span class="stat-label">Expected Goals (xG)</span>
+          <span class="stat-val">--</span>
+        </div>
+      </div>
+
+      <!-- Timeline gol -->
+      <div class="timeline-box">
+        <h3>📋 Timeline Pertandingan</h3>
+              <!-- MOTM & Ratings (BARU) -->
+      <div class="motm-rating-wrapper">
+        <div id="motm-box" class="motm-box">
+          <!-- Diisi via JS -->
+        </div>
+        
+        <div class="ratings-box">
+          <h3>⭐ Rating Pemain</h3>
+          <div id="rating-list" class="rating-list">
+            <!-- Diisi via JS -->
+          </div>
+        </div>
+      </div>
+        <ul class="timeline-list">
+          <li class="placeholder">(timeline gol akan tampil di sini)</li>
+        </ul>
+      </div>
+    </div>
+
+    <footer class="draft-footer">
+      <button class="btn-secondary" onclick="goTo('screen-landing')">🏠 Main Lagi</button>
+    </footer>
+  </section>
+
+  <script src="script.js"></script>
+</body>
+</html>
