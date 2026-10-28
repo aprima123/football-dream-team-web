@@ -191,32 +191,60 @@
   <!-- ============ SCREEN 5: LOADING ============ -->
   <section id="screen-loading" class="screen">
     <div class="live-match-wrapper">
-        <!-- Papan Skor Mini -->
-      <div class="scoreboard">
-        <div class="sb-team team-a">TIM A</div>
-        <div class="sb-score" id="live-score">0 - 0</div>
-        <div class="sb-team team-b">TIM B</div>
-        <div class="sb-clock" id="live-clock">0'</div>
-      </div>
-
-      <!-- 🆕 Mini Pitch untuk Animasi Bola -->
-      <div class="mini-pitch-wrapper">
-        <div class="mini-pitch">
-          <div class="mini-goal left"></div>
-          <div class="mini-goal right"></div>
-          <div class="mini-ball" id="mini-ball">⚽</div>
+      
+      <!-- 🆕 Layout 3 Kolom: Formasi A - Tengah - Formasi B -->
+      <div class="live-layout">
+        
+        <!-- Kolom Kiri: Formasi Tim A -->
+        <div class="live-team-panel team-a-panel">
+          <div class="live-team-header team-a">🔵 TIM A</div>
+          <div class="mini-pitch-formation" id="formation-a">
+            <!-- Diisi via JS di Tahap 6.3 -->
+          </div>
+          <div class="live-bench" id="live-bench-a">
+            <!-- Diisi via JS di Tahap 6.3 -->
+          </div>
         </div>
-      </div>
-
-      <!-- Ticker Komentar Live -->
-      <div class="live-ticker" id="live-ticker">
-        <div class="ticker-placeholder">Menunggu kick-off...</div>
+        
+        <!-- Kolom Tengah: Papan Skor + Mini Pitch + Ticker -->
+        <div class="live-center">
+          <div class="scoreboard">
+            <div class="sb-team team-a">TIM A</div>
+            <div class="sb-score" id="live-score">0 - 0</div>
+            <div class="sb-team team-b">TIM B</div>
+            <div class="sb-clock" id="live-clock">0'</div>
+          </div>
+          
+          <div class="mini-pitch-wrapper">
+            <div class="mini-pitch">
+              <div class="mini-goal left"></div>
+              <div class="mini-goal right"></div>
+              <div class="mini-ball" id="mini-ball">⚽</div>
+            </div>
+          </div>
+          
+          <div class="live-ticker" id="live-ticker">
+            <div class="ticker-placeholder">Menunggu kick-off...</div>
+          </div>
+          
+          <div class="progress-bar-wrapper">
+            <div class="progress-bar" id="match-progress"></div>
+          </div>
+        </div>
+        
+        <!-- Kolom Kanan: Formasi Tim B -->
+        <div class="live-team-panel team-b-panel">
+          <div class="live-team-header team-b">🔴 TIM B</div>
+          <div class="mini-pitch-formation" id="formation-b">
+            <!-- Diisi via JS di Tahap 6.3 -->
+          </div>
+          <div class="live-bench" id="live-bench-b">
+            <!-- Diisi via JS di Tahap 6.3 -->
+          </div>
+        </div>
+        
       </div>
       
-      <!-- Progress Bar 30 detik -->
-      <div class="progress-bar-wrapper">
-        <div class="progress-bar" id="match-progress"></div>
-      </div>
     </div>
   </section>
 

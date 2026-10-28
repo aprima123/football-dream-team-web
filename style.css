@@ -862,3 +862,272 @@ body {
 .mini-ball.celebrate {
   animation: ballCelebrate 0.8s ease-in-out;
 }
+/* ==================== TAHAP 6.2: LIVE LAYOUT 3 KOLOM ==================== */
+#screen-loading {
+  align-items: center;
+  justify-content: flex-start;
+  background: #0f172a;
+  color: white;
+  padding: 16px;
+  overflow-x: auto;
+}
+
+.live-match-wrapper {
+  width: 100%;
+  max-width: 1400px;
+  padding: 8px;
+  text-align: center;
+  margin: 0 auto;
+}
+
+.live-layout {
+  display: grid;
+  grid-template-columns: 1fr 1.4fr 1fr;
+  gap: 16px;
+  align-items: start;
+  width: 100%;
+}
+
+/* Panel Tim (Kiri & Kanan) */
+.live-team-panel {
+  background: #1e293b;
+  border-radius: 12px;
+  padding: 12px;
+  border: 2px solid #334155;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  min-width: 260px;
+}
+
+.live-team-header {
+  font-size: 16px;
+  font-weight: 800;
+  letter-spacing: 1px;
+  padding: 6px;
+  border-radius: 6px;
+}
+.live-team-header.team-a { background: #dbeafe; color: #1e40af; }
+.live-team-header.team-b { background: #fee2e2; color: #991b1b; }
+
+/* Lapangan Formasi (tampak atas) */
+.mini-pitch-formation {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 3 / 4;
+  background: linear-gradient(180deg, #16a34a 0%, #15803d 100%);
+  border-radius: 8px;
+  border: 2px solid #052e16;
+  overflow: hidden;
+  padding: 8px 4px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+}
+
+/* Garis tengah & lingkaran mini pitch formasi */
+.mini-pitch-formation::before {
+  content: '';
+  position: absolute;
+  top: 50%; left: 0; right: 0;
+  height: 1px;
+  background: rgba(255,255,255,0.3);
+}
+.mini-pitch-formation::after {
+  content: '';
+  position: absolute;
+  top: 50%; left: 50%;
+  transform: translate(-50%, -50%);
+  width: 40px; height: 40px;
+  border: 1px solid rgba(255,255,255,0.3);
+  border-radius: 50%;
+}
+
+/* Baris pemain di lapangan */
+.formation-row {
+  display: flex;
+  justify-content: space-around;
+  align-items: center;
+  position: relative;
+  z-index: 1;
+  gap: 4px;
+}
+
+/* Pemain di lapangan (bulat) */
+.live-player {
+  position: relative;
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  background: white;
+  color: #1a1d29;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  font-size: 9px;
+  font-weight: 700;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.3);
+  transition: all 0.4s ease;
+  text-align: center;
+  overflow: visible;
+}
+.live-player.team-a-player { border: 2px solid #2563eb; }
+.live-player.team-b-player { border: 2px solid #dc2626; }
+
+.live-player .lp-name {
+  font-size: 8px;
+  line-height: 1;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 44px;
+  margin-bottom: 1px;
+}
+.live-player .lp-rating {
+  font-size: 10px;
+  font-weight: 800;
+  color: #1e40af;
+}
+
+/* 🆕 Ikon-indikator di sekitar pemain */
+.lp-icon {
+  position: absolute;
+  font-size: 12px;
+  z-index: 5;
+  pointer-events: none;
+}
+.lp-icon.goal { bottom: -10px; right: -6px; }       /* ⚽ kanan bawah */
+.lp-icon.assist { top: -10px; right: -6px; }        /* 👟 kanan atas */
+.lp-icon.yellow { top: -10px; left: -6px; }         /* 🟨 kiri atas */
+.lp-icon.rating-badge { bottom: -10px; left: -6px; }/* rating kiri bawah */
+
+/* Kalau pemain kena kartu kuning-merah, tambah visual */
+.live-player.has-yellow { background: #fef3c7; }
+.live-player.has-red { background: #fecaca; opacity: 0.6; }
+.live-player.has-goal { box-shadow: 0 0 0 3px #fbbf24; }
+
+/* Slot kosong (pemain keluar) */
+.live-player.empty {
+  background: transparent;
+  border: 2px dashed rgba(255,255,255,0.3);
+  opacity: 0.4;
+}
+
+/* Animasi pergantian pemain */
+.live-player.swapping {
+  animation: swapFlash 0.8s ease-in-out;
+}
+@keyframes swapFlash {
+  0%, 100% { transform: scale(1); }
+  25% { transform: scale(1.3); background: #fbbf24; }
+  50% { transform: scale(1.1) rotate(10deg); }
+  75% { transform: scale(1.3) rotate(-10deg); background: #10b981; }
+}
+
+/* Bench di bawah lapangan formasi */
+.live-bench {
+  display: flex;
+  gap: 4px;
+  justify-content: space-around;
+  padding: 8px;
+  background: rgba(0,0,0,0.2);
+  border-radius: 6px;
+  min-height: 40px;
+}
+
+.bench-player {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: #cbd5e1;
+  color: #1a1d29;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 7px;
+  font-weight: 700;
+  text-align: center;
+  border: 2px solid #94a3b8;
+  transition: all 0.4s ease;
+  overflow: hidden;
+}
+.bench-player.team-a-bench { border-color: #60a5fa; }
+.bench-player.team-b-bench { border-color: #f87171; }
+
+.bench-player.used {
+  opacity: 0.3;
+  text-decoration: line-through;
+}
+
+/* Kolom Tengah */
+.live-center {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  min-width: 320px;
+}
+
+.live-center .scoreboard { margin-bottom: 0; }
+
+/* Responsif untuk layar kecil */
+@media (max-width: 1024px) {
+  .live-layout {
+    grid-template-columns: 1fr;
+  }
+  .live-team-panel {
+    max-width: 500px;
+    margin: 0 auto;
+  }
+}
+/* ==================== TAHAP 7: MATCH MODE ==================== */
+.ticker-line.event:first-child {
+  color: #fbbf24;
+  font-weight: 700;
+  text-align: center;
+  font-size: 16px;
+}
+.result-note {
+  font-size: 16px !important;
+  font-weight: 600;
+  color: #1e40af !important;
+}
+/* ==================== TAHAP 7: SLOT KARTU MERAH ==================== */
+.live-player.has-red {
+  background: #1a1d29;
+  color: #ef4444;
+  border: 2px solid #ef4444 !important;
+  opacity: 0.7;
+  position: relative;
+}
+
+.live-player.has-red::before {
+  content: '✕';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  font-size: 28px;
+  font-weight: 900;
+  color: #ef4444;
+  text-shadow: 0 0 6px rgba(0,0,0,0.8);
+  z-index: 10;
+}
+
+.live-player.has-red .lp-name,
+.live-player.has-red .lp-rating {
+  opacity: 0.4;
+}
+
+.live-player.has-red .lp-icon {
+  display: none;
+}
+
+/* Efek getar saat kartu merah muncul */
+@keyframes redPulse {
+  0%, 100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.7); }
+  50% { transform: scale(1.15); box-shadow: 0 0 0 12px rgba(239, 68, 68, 0); }
+}
+.live-player.red-flash {
+  animation: redPulse 0.8s ease-out;
+}

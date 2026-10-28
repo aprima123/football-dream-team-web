@@ -297,6 +297,170 @@ function startMatch() {
   runLiveMatchAnimation(result);
 }
 
+// ============================================================
+// TAHAP 6.3: LIVE FORMATION RENDERER
+// ============================================================
+
+// Helper: Render formasi awal ke lapangan kiri & kanan
+function renderInitialFormation(team, teamName, formationId, benchId) {
+  const formationEl = document.getElementById(formationId);
+  const benchEl = document.getElementById(benchId);
+  if (!formationEl || !benchEl) return;
+
+  // Urutan posisi untuk 4-3-3: depan, tengah, belakang, GK
+  const positions = [
+    ['LW', 'ST', 'RW'],
+    ['CM', 'CDM', 'CM'],
+    ['LB', 'CB', 'CB', 'RB'],
+    ['GK']
+  ];
+
+  const teamObj = teamName === 'A' ? state.teamA : state.teamB;
+  const benchObj = teamName === 'A' ? state.benchA : state.benchB;
+
+  // Kelompokkan pemain berdasarkan posisi
+  const players = Object.values(teamObj);
+  
+  // Render baris formasi
+  formationEl.innerHTML = positions.map(rowPositions => {
+    const rowHtml = rowPositions.map(pos => {
+      // Cari pemain dengan posisi ini yang belum dirender
+      const player = players.find(p => p.position === pos && !p._rendered);
+      if (player) {
+        player._rendered = true; // Tandai agar tidak dobel
+        return `
+          <div class="live-player team-${teamName.toLowerCase()}-player" id="player-${player.id}" data-player-id="${player.id}">
+            <div class="lp-name">${getShortName(player.name)}</div>
+            <div class="lp-rating">${(player.overall / 10).toFixed(1)}</div>
+          </div>
+        `;
+      }
+      return `<div class="live-player empty"></div>`;
+    }).join('');
+    return `<div class="formation-row">${rowHtml}</div>`;
+  }).join('');
+
+  // Reset flag _rendered
+  players.forEach(p => delete p._rendered);
+
+  // Render bench
+  const benchPlayers = Object.values(benchObj);
+  benchEl.innerHTML = benchPlayers.map(p => `
+    <div class="bench-player team-${teamName.toLowerCase()}-bench" id="bench-${p.id}" data-player-id="${p.id}">
+      ${getShortName(p.name)}
+    </div>
+  `).join('');
+}
+
+// Helper: Cari elemen pemain di lapangan berdasarkan ID
+function getPlayerEl(playerId) {
+  return document.getElementById(`player-${playerId}`);
+}
+
+// Helper: Update ikon pemain (gol, assist, kartu, rating)
+function updatePlayerIcons(playerId, updates) {
+  const el = getPlayerEl(playerId);
+  if (!el) return;
+
+  // Update Rating
+  if (updates.rating !== undefined) {
+    const ratingEl = el.querySelector('.lp-rating');
+    if (ratingEl) ratingEl.innerText = updates.rating.toFixed(1);
+  }
+
+  // Tambah Gol
+  if (updates.goal) {
+    el.classList.add('has-goal');
+    if (!el.querySelector('.lp-icon.goal')) {
+      const icon = document.createElement('div');
+      icon.className = 'lp-icon goal';
+      icon.innerText = '⚽';
+      el.appendChild(icon);
+    }
+  }
+
+  // Tambah Assist
+  if (updates.assist) {
+    if (!el.querySelector('.lp-icon.assist')) {
+      const icon = document.createElement('div');
+      icon.className = 'lp-icon assist';
+      icon.innerText = '👟';
+      el.appendChild(icon);
+    }
+  }
+
+  // Tambah Kartu Kuning
+  if (updates.yellow) {
+    el.classList.add('has-yellow');
+    let yellowIcon = el.querySelector('.lp-icon.yellow');
+    if (!yellowIcon) {
+      yellowIcon = document.createElement('div');
+      yellowIcon.className = 'lp-icon yellow';
+      el.appendChild(yellowIcon);
+    }
+    // Kalau sudah ada kartu kuning sebelumnya, jadi merah
+    if (updates.isSecondYellow) {
+      yellowIcon.innerText = '🟨🟥';
+    } else {
+      yellowIcon.innerText = '🟨';
+    }
+  }
+
+  // Tambah Kartu Merah langsung
+  if (updates.red) {
+    el.classList.add('has-red');
+    if (!el.querySelector('.lp-icon.yellow')) {
+      const icon = document.createElement('div');
+      icon.className = 'lp-icon yellow';
+      icon.innerText = '🟥';
+      el.appendChild(icon);
+    } else {
+      el.querySelector('.lp-icon.yellow').innerText = '🟨🟥';
+    }
+  }
+}
+
+// Helper: Animasi pergantian pemain
+function animateSubstitution(teamName, outPlayerId, inPlayerId, newRating) {
+  const outEl = getPlayerEl(outPlayerId);
+  const benchInEl = document.getElementById(`bench-${inPlayerId}`);
+  
+  if (outEl) {
+    // Animasi pemain keluar
+    outEl.classList.add('swapping');
+    setTimeout(() => {
+      outEl.classList.remove('swapping');
+      outEl.classList.add('empty');
+      outEl.innerHTML = '';
+    }, 400);
+  }
+
+  if (benchInEl) {
+    // Animasi pemain dari bench
+    benchInEl.classList.add('used');
+  }
+
+  // Delay untuk render pemain baru masuk
+  setTimeout(() => {
+    if (outEl) {
+      // Cari data pemain baru
+      const newPlayer = state.allPlayers.find(p => p.id === inPlayerId);
+      if (newPlayer) {
+        outEl.innerHTML = `
+          <div class="lp-name">${getShortName(newPlayer.name)}</div>
+          <div class="lp-rating">${(newRating).toFixed(1)}</div>
+        `;
+        outEl.classList.remove('empty', 'has-goal', 'has-yellow', 'has-red');
+        outEl.classList.add('swapping');
+        setTimeout(() => outEl.classList.remove('swapping'), 800);
+      }
+    }
+  }, 500);
+}
+
+// ============================================================
+// FUNGSI UTAMA: ANIMASI LIVE MATCH
+// ============================================================
 function runLiveMatchAnimation(result) {
   const clockEl = document.getElementById('live-clock');
   const scoreEl = document.getElementById('live-score');
@@ -304,10 +468,12 @@ function runLiveMatchAnimation(result) {
   const progressEl = document.getElementById('match-progress');
   const ballEl = document.getElementById('mini-ball');
 
-  // Reset UI
   clockEl.innerText = "0'";
   scoreEl.innerText = "0 - 0";
-  tickerEl.innerHTML = `<div class="ticker-line event">⚽ Kick-off! Pertandingan dimulai.</div>`;
+  const modeLabel = result.matchMode === 'dramatic' ? '🔥 MATCH DRAMATIC! ' 
+                  : result.matchMode === 'highScoring' ? '⚡ HIGH SCORING MATCH! ' 
+                  : '';
+  tickerEl.innerHTML = `<div class="ticker-line event">${modeLabel}⚽ Kick-off! Pertandingan dimulai.</div>`;
   progressEl.style.width = "0%";
   if (ballEl) {
     ballEl.style.left = '50%';
@@ -315,10 +481,24 @@ function runLiveMatchAnimation(result) {
     ballEl.classList.remove('celebrate');
   }
 
-  const totalDuration = 30000;
+  renderInitialFormation(state.teamA, 'A', 'formation-a', 'live-bench-a');
+  renderInitialFormation(state.teamB, 'B', 'formation-b', 'live-bench-b');
+
+  const totalDuration = 120000; // 2 menit
   const matchMinutes = 90;
   let currentMinute = 0;
   let scoreA = 0, scoreB = 0;
+
+  const liveRatings = {};
+  result.ratings.forEach(r => {
+    liveRatings[r.player.id] = r.rating;
+  });
+
+  // 🆕 Map nama → player ID (untuk kartu merah & substitusi)
+  const nameToPlayer = {};
+  [...Object.values(state.teamA), ...Object.values(state.teamB)].forEach(p => {
+    nameToPlayer[p.name] = p;
+  });
 
   const events = [{ minute: 1, type: 'kickoff', text: '⚽ Kick-off! Pertandingan dimulai.' }];
   
@@ -326,16 +506,24 @@ function runLiveMatchAnimation(result) {
     if (e.type === 'goal') {
       events.push({
         minute: e.minute, type: 'goal', team: e.team,
+        playerId: e.scorerId, assistId: e.assistId,
         text: `⚽ GOOOL! ${e.scorer} (Tim ${e.team}) menit ${e.minute}'!${e.assist ? ` Assist: ${e.assist}.` : ''}`
       });
     } else if (e.type === 'yellow') {
-      events.push({ minute: e.minute, type: 'yellow', team: e.team, text: `🟨 Kartu Kuning! ${e.player} (Tim ${e.team}).` });
+      events.push({ minute: e.minute, type: 'yellow', team: e.team, playerId: e.playerId, text: `🟨 Kartu Kuning! ${e.player} (Tim ${e.team}).` });
     } else if (e.type === 'red') {
-      events.push({ minute: e.minute, type: 'red', team: e.team, text: `🟥 KARTU MERAH! ${e.player} (Tim ${e.team}) dikeluarkan!` });
+      events.push({ 
+        minute: e.minute, type: 'red', team: e.team, playerId: e.playerId, reason: e.reason,
+        text: `🟥 KARTU MERAH! ${e.player} (Tim ${e.team})${e.reason ? ' - ' + e.reason : ''}! Tim bermain dengan 10 orang.` 
+      });
     } else if (e.type === 'injury') {
-      events.push({ minute: e.minute, type: 'injury', team: e.team, text: `🤕 Cedera! ${e.player} (Tim ${e.team}) harus ditarik keluar.` });
+      events.push({ minute: e.minute, type: 'injury', team: e.team, playerId: e.playerId, text: `🤕 Cedera! ${e.player} (Tim ${e.team}) harus ditarik keluar.` });
     } else if (e.type === 'sub') {
-      events.push({ minute: e.minute, type: 'sub', team: e.team, text: `🔄 Substitusi (Tim ${e.team}): ${e.outPlayer} → ${e.inPlayer} (${e.reason}).` });
+      events.push({ 
+        minute: e.minute, type: 'sub', team: e.team, 
+        outPlayer: e.outPlayer, inPlayer: e.inPlayer,
+        text: `🔄 Substitusi (Tim ${e.team}): ${e.outPlayer} → ${e.inPlayer} (${e.reason}).`
+      });
     } else if (e.type === 'shot') {
       events.push({ minute: e.minute, type: 'shot', team: e.team, text: `🎯 Tembakan! ${e.shooter} (Tim ${e.team}) ${e.onTarget ? 'mengarah ke gawang!' : 'melenceng.'}` });
     }
@@ -348,37 +536,31 @@ function runLiveMatchAnimation(result) {
   let eventIndex = 0;
   const intervalTime = totalDuration / matchMinutes;
 
-  // 🆕 Fungsi Animasi Bola
+  const playerYellowCount = {};
+
   const animateBall = (type, team) => {
     if (!ballEl) return;
-
     if (type === 'goal') {
-      // Bola ke gawang lawan + efek celebrate
       const targetLeft = team === 'A' ? '88%' : '12%';
       ballEl.style.left = targetLeft;
       ballEl.classList.add('celebrate');
       setTimeout(() => {
         ballEl.classList.remove('celebrate');
-        // Kembali ke tengah setelah 1 detik
         setTimeout(() => { ballEl.style.left = '50%'; }, 400);
       }, 800);
     } else if (type === 'shot') {
-      // Bola ke area gawang lawan (tapi tidak masuk)
       const targetLeft = team === 'A' ? '75%' : '25%';
       ballEl.style.left = targetLeft;
       setTimeout(() => { ballEl.style.left = '50%'; }, 500);
     } else if (type === 'yellow' || type === 'red') {
-      // Bola ke tengah + naik (kartu)
       ballEl.style.left = '50%';
       ballEl.style.top = '30%';
       setTimeout(() => { ballEl.style.top = '50%'; }, 500);
     } else if (type === 'injury') {
-      // Bola ke tengah + turun (pemain jatuh)
       ballEl.style.left = '50%';
       ballEl.style.top = '70%';
       setTimeout(() => { ballEl.style.top = '50%'; }, 500);
     } else if (type === 'sub') {
-      // Bola sedikit geser (pergantian)
       const targetLeft = team === 'A' ? '40%' : '60%';
       ballEl.style.left = targetLeft;
       setTimeout(() => { ballEl.style.left = '50%'; }, 400);
@@ -393,19 +575,53 @@ function runLiveMatchAnimation(result) {
     while (eventIndex < events.length && events[eventIndex].minute === currentMinute) {
       const ev = events[eventIndex];
       
-      // Update skor jika gol
       if (ev.type === 'goal') {
         if (ev.team === 'A') scoreA++;
         else scoreB++;
         scoreEl.innerText = `${scoreA} - ${scoreB}`;
         scoreEl.style.transform = "scale(1.2)";
         setTimeout(() => scoreEl.style.transform = "scale(1)", 200);
+
+        if (ev.playerId) updatePlayerIcons(ev.playerId, { goal: true, rating: liveRatings[ev.playerId] || 7.0 });
+        if (ev.assistId) updatePlayerIcons(ev.assistId, { assist: true, rating: liveRatings[ev.assistId] || 7.0 });
       }
 
-      // 🆕 Trigger animasi bola
+      if (ev.type === 'yellow' && ev.playerId) {
+        playerYellowCount[ev.playerId] = (playerYellowCount[ev.playerId] || 0) + 1;
+        const isSecond = playerYellowCount[ev.playerId] >= 2;
+        updatePlayerIcons(ev.playerId, { 
+          yellow: true, isSecondYellow: isSecond,
+          rating: liveRatings[ev.playerId] || 6.5 
+        });
+      }
+
+      // 🆕 Kartu Merah → tampilkan X di slot, TIDAK ada substitusi
+      if (ev.type === 'red' && ev.playerId) {
+        const el = getPlayerEl(ev.playerId);
+        if (el) {
+          el.classList.add('has-red', 'red-flash');
+          setTimeout(() => el.classList.remove('red-flash'), 800);
+        }
+      }
+
+      if (ev.playerId && (ev.type === 'goal' || ev.type === 'yellow' || ev.type === 'injury')) {
+        if (liveRatings[ev.playerId] !== undefined) {
+          updatePlayerIcons(ev.playerId, { rating: liveRatings[ev.playerId] });
+        }
+      }
+
+      if (ev.type === 'sub' && ev.outPlayer && ev.inPlayer) {
+        const outPlayer = nameToPlayer[ev.outPlayer];
+        const inPlayer = Object.values(state.benchA).concat(Object.values(state.benchB)).find(p => p.name === ev.inPlayer);
+        
+        if (outPlayer && inPlayer) {
+          const newRating = liveRatings[inPlayer.id] || (inPlayer.overall / 10);
+          animateSubstitution(ev.team, outPlayer.id, inPlayer.id, newRating);
+        }
+      }
+
       if (ev.team) animateBall(ev.type, ev.team);
 
-      // Tambahkan ke ticker
       const line = document.createElement('div');
       line.className = `ticker-line ${ev.type}`;
       line.innerText = ev.text;
@@ -447,26 +663,39 @@ function simulateMatch(teamA, teamB) {
   const a_defStrength = avgStat(a_def, 'defending') + avgStat(a_def, 'physical');
   const b_defStrength = avgStat(b_def, 'defending') + avgStat(b_def, 'physical');
 
+  const modeRoll = Math.random();
+  let matchMode = 'normal';
+  let conversionBoost = 1.0;
+  let extraEvents = 0;
+  
+  if (modeRoll > 0.90) {
+    matchMode = 'dramatic'; conversionBoost = 2.0; extraEvents = 3;
+  } else if (modeRoll > 0.70) {
+    matchMode = 'highScoring'; conversionBoost = 1.5; extraEvents = 1;
+  }
+  
+  console.log(`🎲 Match Mode: ${matchMode} (boost: ${conversionBoost}x)`);
+
   let a_poss = (a_midStrength / (a_midStrength + b_midStrength)) * 100;
   a_poss = Math.round(Math.min(70, Math.max(30, a_poss + (Math.random() * 6 - 3))));
   const b_poss = 100 - a_poss;
 
-  let a_shots = Math.round((a_attStrength / b_defStrength) * 8 * (a_poss / 50) + (Math.random() * 4 - 2));
-  let b_shots = Math.round((b_attStrength / a_defStrength) * 8 * (b_poss / 50) + (Math.random() * 4 - 2));
-  a_shots = Math.max(1, a_shots); 
-  b_shots = Math.max(1, b_shots);
+  let a_shots = Math.round((a_attStrength / b_defStrength) * 10 * (a_poss / 50) + (Math.random() * 5 - 2));
+  let b_shots = Math.round((b_attStrength / a_defStrength) * 10 * (b_poss / 50) + (Math.random() * 5 - 2));
+  a_shots = Math.max(2, a_shots); 
+  b_shots = Math.max(2, b_shots);
 
-  let a_onTarget = Math.min(a_shots, Math.round(a_shots * 0.4) + Math.floor(Math.random() * 3));
-  let b_onTarget = Math.min(b_shots, Math.round(b_shots * 0.4) + Math.floor(Math.random() * 3));
+  let a_onTarget = Math.min(a_shots, Math.round(a_shots * 0.45) + Math.floor(Math.random() * 3));
+  let b_onTarget = Math.min(b_shots, Math.round(b_shots * 0.45) + Math.floor(Math.random() * 3));
 
   const calcXG = (att, shots, onTarget) => {
     const avgShooting = avgStat(att, 'shooting');
-    const baseXGPerShot = (avgShooting / 100) * 0.15;
+    const baseXGPerShot = (avgShooting / 100) * 0.18;
     let xg = 0;
     for (let i = 0; i < shots; i++) {
       const isOnTarget = i < onTarget;
       const shotQuality = isOnTarget ? baseXGPerShot * 1.5 : baseXGPerShot * 0.3;
-      xg += shotQuality * (0.7 + Math.random() * 0.6);
+      xg += shotQuality * (0.7 + Math.random() * 0.6) * conversionBoost;
     }
     return parseFloat(xg.toFixed(2));
   };
@@ -474,8 +703,26 @@ function simulateMatch(teamA, teamB) {
   const a_xG = calcXG(a_att, a_shots, a_onTarget);
   const b_xG = calcXG(b_att, b_shots, b_onTarget);
 
-  // 🆕 Update fungsi processTeamEvents dengan Cedera & Substitusi
-  const processTeamEvents = (team, shotsOnTarget, opponentDef, teamName, xG, benchObj) => {
+  const findReplacement = (benchPool, injuredPosition) => {
+    if (benchPool.length === 0) return null;
+    let idx = benchPool.findIndex(p => p.position === injuredPosition);
+    if (idx === -1) {
+      const positionGroups = {
+        'GK': ['GK'], 'LB': ['LB', 'CB', 'RB'], 'CB': ['CB', 'LB', 'RB'], 'RB': ['RB', 'CB', 'LB'],
+        'CDM': ['CDM', 'CM'], 'CM': ['CM', 'CDM'], 'LW': ['LW', 'RW', 'ST'],
+        'RW': ['RW', 'LW', 'ST'], 'ST': ['ST', 'LW', 'RW']
+      };
+      const compatible = positionGroups[injuredPosition] || [injuredPosition];
+      idx = benchPool.findIndex(p => compatible.includes(p.position));
+    }
+    if (idx === -1) idx = 0;
+    return benchPool.splice(idx, 1)[0];
+  };
+
+  // 🆕 REFACTOR TOTAL: Urutan event diperbaiki
+  // 1. Generate kartu merah & cedera DULU → dapat daftar pemain keluar + menitnya
+  // 2. Baru generate gol, tapi filter pemain yang sudah keluar
+  const processTeamEvents = (team, shotsOnTarget, opponentDef, teamName, xG, benchObj, boost) => {
     const allPlayers = Object.values(team);
     const scorerList = getByPos(team, ['ST', 'LW', 'RW', 'CM']);
     const assistList = getByPos(team, ['CM', 'CDM', 'RW', 'LW', 'LB', 'RB']);
@@ -484,26 +731,114 @@ function simulateMatch(teamA, teamB) {
     
     const events = [];
     const ratings = {};
-    const removedPlayers = []; // Track pemain yang keluar (kartu merah/cedera)
-    const benchPool = Object.values(benchObj || {});
-    let benchIndex = 0;
+    const removedPlayers = []; // { id, name, position, minute, reason }
+    const yellowCards = {};
+    let benchPool = [...Object.values(benchObj || {})];
     
     allPlayers.forEach(p => ratings[p.id] = p.overall / 10);
 
     const oppGK = opponentDef.find(p => p.position === 'GK');
     const saveRate = oppGK ? oppGK.realLife.saveRate : 0.75;
-    const conversionRate = Math.max(0.1, 0.8 - saveRate); 
+
+    // ========================================
+    // STEP 1: GENERATE KARTU MERAH & CEDERA DULU
+    // ========================================
+    
+    // Kartu Kuning (bisa berujung merah kalau 2)
+    const yellowCandidates = cardCandidates.length > 0 ? cardCandidates : allOutfield;
+    const yellowCount = Math.floor(Math.random() * 3); 
+    for (let i = 0; i < yellowCount; i++) {
+      const activePlayers = yellowCandidates.filter(p => !removedPlayers.find(r => r.id === p.id));
+      if (activePlayers.length === 0) break;
+      const player = activePlayers[Math.floor(Math.random() * activePlayers.length)];
+      const minute = Math.floor(Math.random() * 85) + 5;
+      
+      yellowCards[player.id] = (yellowCards[player.id] || 0) + 1;
+      
+      if (yellowCards[player.id] >= 2) {
+        events.push({ minute, type: 'yellow', team: teamName, player: player.name, playerId: player.id });
+        events.push({ minute: minute + 1, type: 'red', team: teamName, player: player.name, playerId: player.id, reason: '2 kartu kuning' });
+        ratings[player.id] = Math.max(1.0, ratings[player.id] - 0.8);
+        removedPlayers.push({ id: player.id, name: player.name, position: player.position, minute: minute + 1, reason: 'red' });
+      } else {
+        events.push({ minute, type: 'yellow', team: teamName, player: player.name, playerId: player.id });
+        ratings[player.id] = Math.max(1.0, ratings[player.id] - 0.3);
+      }
+    }
+
+    // Kartu Merah Langsung
+    const redChance = matchMode === 'dramatic' ? 0.25 : 0.10;
+    if (Math.random() < redChance && allOutfield.length > 0) {
+      const activeOutfield = allOutfield.filter(p => !removedPlayers.find(r => r.id === p.id));
+      if (activeOutfield.length > 0) {
+        const player = activeOutfield[Math.floor(Math.random() * activeOutfield.length)];
+        const minute = Math.floor(Math.random() * 75) + 15;
+        
+        events.push({ minute, type: 'red', team: teamName, player: player.name, playerId: player.id, reason: 'pelanggaran keras' });
+        ratings[player.id] = Math.max(1.0, ratings[player.id] - 0.5);
+        removedPlayers.push({ id: player.id, name: player.name, position: player.position, minute, reason: 'red' });
+      }
+    }
+
+    // Cedera (BISA digantikan bench)
+    if (Math.random() < 0.25 && allOutfield.length > 0) {
+      const activeOutfield = allOutfield.filter(p => !removedPlayers.find(r => r.id === p.id));
+      if (activeOutfield.length > 0) {
+        const player = activeOutfield[Math.floor(Math.random() * activeOutfield.length)];
+        const minute = Math.floor(Math.random() * 80) + 10;
+        
+        events.push({ minute, type: 'injury', team: teamName, player: player.name, playerId: player.id });
+        ratings[player.id] = Math.max(1.0, ratings[player.id] - 0.2);
+        removedPlayers.push({ id: player.id, name: player.name, position: player.position, minute, reason: 'injury' });
+
+        const sub = findReplacement(benchPool, player.position);
+        if (sub) {
+          events.push({ minute: minute + 1, type: 'sub', team: teamName, inPlayer: sub.name, outPlayer: player.name, reason: 'cedera' });
+          ratings[sub.id] = sub.overall / 10;
+        }
+      }
+    }
+
+    // ========================================
+    // STEP 2: GENERATE GOL (filter pemain yang sudah keluar)
+    // ========================================
+    
+    // Helper: cek apakah pemain masih aktif di menit tertentu
+    const isPlayerActiveAt = (playerId, minute) => {
+      const removed = removedPlayers.find(r => r.id === playerId);
+      if (!removed) return true;
+      return minute < removed.minute; // Aktif kalau sebelum menit keluar
+    };
+
+    const baseConversion = 0.15 + (avgStat(scorerList, 'shooting') - (saveRate * 100)) / 300;
+    const conversionRate = Math.max(0.10, baseConversion) * boost;
     
     let totalGoals = 0;
     for(let i=0; i<shotsOnTarget; i++) {
        if (Math.random() < conversionRate) totalGoals++;
     }
-    if (totalGoals === 0 && xG > 1.5 && Math.random() > 0.4) totalGoals = 1;
+    if (totalGoals === 0 && xG > 1.2 && Math.random() > 0.3) totalGoals = 1;
+    if (totalGoals === 0 && matchMode === 'dramatic') {
+      totalGoals = 1 + Math.floor(Math.random() * 2);
+    }
 
-    // Generate Gol
-    for (let i = 0; i < totalGoals; i++) {
-      const activeScorers = scorerList.filter(p => !removedPlayers.find(r => r.id === p.id));
-      if (activeScorers.length === 0) break;
+    // Generate Gol dengan filter pemain aktif
+    let attempts = 0;
+    const maxAttempts = totalGoals * 10; // Hindari infinite loop
+    while (events.filter(e => e.type === 'goal').length < totalGoals && attempts < maxAttempts) {
+      attempts++;
+      
+      // Tentukan menit gol dulu
+      let minute;
+      if (matchMode === 'dramatic' && Math.random() < 0.4) {
+        minute = Math.floor(Math.random() * 30) + 60;
+      } else {
+        minute = Math.floor(Math.random() * 90) + 1;
+      }
+      
+      // Filter: pemain yang AKTIF di menit tersebut
+      const activeScorers = scorerList.filter(p => isPlayerActiveAt(p.id, minute));
+      if (activeScorers.length === 0) continue;
       
       const weighted = activeScorers.map(p => ({ p, weight: p.realLife.goalsPer90 + (p.position === 'ST' ? 0.2 : 0) }));
       const totalWeight = weighted.reduce((acc, obj) => acc + obj.weight, 0);
@@ -514,9 +849,12 @@ function simulateMatch(teamA, teamB) {
         r -= obj.weight;
       }
 
+      // Pilih assist (filter juga)
       let assist = null;
       if (Math.random() < 0.7 && assistList.length > 0) {
-        const activeAssists = assistList.filter(p => p.id !== selected.id && !removedPlayers.find(r => r.id === p.id));
+        const activeAssists = assistList.filter(p => 
+          p.id !== selected.id && isPlayerActiveAt(p.id, minute)
+        );
         if (activeAssists.length > 0) {
           const aWeighted = activeAssists.map(p => ({ p, weight: p.realLife.assistsPer90 * 100 + p.stats.passing / 10 }));
           const aTotal = aWeighted.reduce((acc, obj) => acc + obj.weight, 0);
@@ -529,100 +867,72 @@ function simulateMatch(teamA, teamB) {
       }
 
       events.push({
-        minute: Math.floor(Math.random() * 90) + 1,
-        type: 'goal',
-        team: teamName,
-        scorer: selected.name,
-        scorerId: selected.id,
-        assist: assist ? assist.name : null,
-        assistId: assist ? assist.id : null
+        minute, type: 'goal', team: teamName,
+        scorer: selected.name, scorerId: selected.id,
+        assist: assist ? assist.name : null, assistId: assist ? assist.id : null
       });
 
       ratings[selected.id] = Math.min(10.0, ratings[selected.id] + (0.5 + Math.random() * 0.5));
       if (assist) ratings[assist.id] = Math.min(10.0, ratings[assist.id] + (0.3 + Math.random() * 0.3));
     }
 
-    // Generate Tembakan
-    const shotCount = Math.max(3, Math.floor(Math.random() * 6) + 3);
+    // ========================================
+    // STEP 3: GENERATE TEMBAKAN (filter juga)
+    // ========================================
+    const shotCount = Math.max(3, Math.floor(Math.random() * 6) + 3 + extraEvents);
     for (let i = 0; i < shotCount; i++) {
-      const shooter = allOutfield[Math.floor(Math.random() * allOutfield.length)];
-      if (!shooter || removedPlayers.find(r => r.id === shooter.id)) continue;
+      const minute = Math.floor(Math.random() * 90) + 1;
+      const activeOutfield = allOutfield.filter(p => isPlayerActiveAt(p.id, minute));
+      if (activeOutfield.length === 0) break;
+      const shooter = activeOutfield[Math.floor(Math.random() * activeOutfield.length)];
       events.push({
-        minute: Math.floor(Math.random() * 90) + 1,
-        type: 'shot',
-        team: teamName,
-        shooter: shooter.name,
-        onTarget: Math.random() > 0.5
+        minute, type: 'shot', team: teamName,
+        shooter: shooter.name, onTarget: Math.random() > 0.5
       });
     }
 
-    // Generate Kartu Kuning
-    const yellowCandidates = cardCandidates.length > 0 ? cardCandidates : allOutfield;
-    const yellowCount = Math.floor(Math.random() * 3); 
-    for (let i = 0; i < yellowCount; i++) {
-      const activePlayers = yellowCandidates.filter(p => !removedPlayers.find(r => r.id === p.id));
-      if (activePlayers.length === 0) break;
-      const player = activePlayers[Math.floor(Math.random() * activePlayers.length)];
-      const minute = Math.floor(Math.random() * 85) + 5;
-      
-      events.push({ minute, type: 'yellow', team: teamName, player: player.name, playerId: player.id });
-      ratings[player.id] = Math.max(1.0, ratings[player.id] - 0.3);
-    }
+    // Urutkan event berdasarkan menit
+    events.sort((a, b) => a.minute - b.minute);
 
-    // 🆕 Generate Kartu Merah + Substitusi
-    if (Math.random() < 0.15 && allOutfield.length > 0) {
-      const activeOutfield = allOutfield.filter(p => !removedPlayers.find(r => r.id === p.id));
-      if (activeOutfield.length > 0) {
-        const player = activeOutfield[Math.floor(Math.random() * activeOutfield.length)];
-        const minute = Math.floor(Math.random() * 75) + 15;
-        
-        events.push({ minute, type: 'red', team: teamName, player: player.name, playerId: player.id });
-        ratings[player.id] = Math.max(1.0, ratings[player.id] - 0.5);
-        removedPlayers.push({ id: player.id, name: player.name });
+    // Kumpulkan pemain kartu merah untuk render
+    const redCardedPlayers = removedPlayers
+      .filter(r => r.reason === 'red')
+      .map(r => ({ id: r.id, name: r.name, position: r.position, team: teamName }));
 
-        // Substitusi masuk
-        if (benchIndex < benchPool.length) {
-          const sub = benchPool[benchIndex++];
-          events.push({
-            minute: minute + 1, type: 'sub', team: teamName,
-            inPlayer: sub.name, outPlayer: player.name, reason: 'kartu merah'
-          });
-          ratings[sub.id] = sub.overall / 10;
-        }
-      }
-    }
-
-    // 🆕 Generate Cedera + Substitusi (25% peluang)
-    if (Math.random() < 0.25 && allOutfield.length > 0) {
-      const activeOutfield = allOutfield.filter(p => !removedPlayers.find(r => r.id === p.id));
-      if (activeOutfield.length > 0) {
-        const player = activeOutfield[Math.floor(Math.random() * activeOutfield.length)];
-        const minute = Math.floor(Math.random() * 80) + 10;
-        
-        events.push({ minute, type: 'injury', team: teamName, player: player.name, playerId: player.id });
-        ratings[player.id] = Math.max(1.0, ratings[player.id] - 0.2);
-        removedPlayers.push({ id: player.id, name: player.name });
-
-        // Substitusi masuk
-        if (benchIndex < benchPool.length) {
-          const sub = benchPool[benchIndex++];
-          events.push({
-            minute: minute + 1, type: 'sub', team: teamName,
-            inPlayer: sub.name, outPlayer: player.name, reason: 'cedera'
-          });
-          ratings[sub.id] = sub.overall / 10;
-        }
-      }
-    }
-
-    return { events, ratings };
+    return { events, ratings, redCardedPlayers };
   };
 
-  const a_result = processTeamEvents(teamA, a_onTarget, b_def, 'A', a_xG, state.benchA);
-  const b_result = processTeamEvents(teamB, b_onTarget, a_def, 'B', b_xG, state.benchB);
+  const a_result = processTeamEvents(teamA, a_onTarget, b_def, 'A', a_xG, state.benchA, conversionBoost);
+  const b_result = processTeamEvents(teamB, b_onTarget, a_def, 'B', b_xG, state.benchB, conversionBoost);
 
   const allEvents = [...a_result.events, ...b_result.events].sort((x, y) => x.minute - y.minute);
   const allGoals = allEvents.filter(e => e.type === 'goal');
+  
+  const scoreTimeline = [];
+  let runningA = 0, runningB = 0;
+  allGoals.forEach(g => {
+    if (g.team === 'A') runningA++;
+    else runningB++;
+    scoreTimeline.push({ minute: g.minute, A: runningA, B: runningB, team: g.team });
+  });
+
+  let comeback = null;
+  for (let i = 0; i < scoreTimeline.length; i++) {
+    const st = scoreTimeline[i];
+    const diff = st.A - st.B;
+    if (st.team === 'B' && diff <= -2) comeback = { team: 'B', minute: st.minute };
+    if (st.team === 'A' && diff >= 2) comeback = { team: 'A', minute: st.minute };
+  }
+  let comebackNote = null;
+  const finalA = a_result.events.filter(e => e.type === 'goal').length;
+  const finalB = b_result.events.filter(e => e.type === 'goal').length;
+  if (comeback) {
+    if (comeback.team === 'A' && finalA >= finalB && finalB >= 2) {
+      comebackNote = `🔥 COMEBACK! Tim A bangkit dari ketertinggalan!`;
+    } else if (comeback.team === 'B' && finalB >= finalA && finalA >= 2) {
+      comebackNote = `🔥 COMEBACK! Tim B bangkit dari ketertinggalan!`;
+    }
+  }
   
   const allRatings = [];
   Object.keys(a_result.ratings).forEach(id => {
@@ -635,9 +945,11 @@ function simulateMatch(teamA, teamB) {
   });
   allRatings.sort((a, b) => b.rating - a.rating);
 
+  const allRedCards = [...a_result.redCardedPlayers, ...b_result.redCardedPlayers];
+
   return {
-    scoreA: a_result.events.filter(e => e.type === 'goal' && e.team === 'A').length,
-    scoreB: b_result.events.filter(e => e.type === 'goal' && e.team === 'B').length,
+    scoreA: finalA,
+    scoreB: finalB,
     possession: { A: a_poss, B: b_poss },
     shots: { A: a_shots, B: b_shots },
     onTarget: { A: a_onTarget, B: b_onTarget },
@@ -646,7 +958,10 @@ function simulateMatch(teamA, teamB) {
     goals: allGoals,
     events: allEvents,
     ratings: allRatings,
-    motm: allRatings[0]
+    motm: allRatings[0],
+    matchMode: matchMode,
+    comeback: comebackNote,
+    redCards: allRedCards
   };
 }
 
@@ -655,9 +970,16 @@ function simulateMatch(teamA, teamB) {
 // ============================================================
 function renderResult(res) {
   document.querySelector('.score-number').innerText = `${res.scoreA} - ${res.scoreB}`;
-  document.querySelector('.result-note').innerText = 
-    res.scoreA === res.scoreB ? "Pertandingan berakhir imbang." : 
-    `Tim ${res.scoreA > res.scoreB ? 'A' : 'B'} memenangkan pertandingan!`;
+    let resultText = res.scoreA === res.scoreB 
+    ? "Pertandingan berakhir imbang." 
+    : `Tim ${res.scoreA > res.scoreB ? 'A' : 'B'} memenangkan pertandingan!`;
+  
+  // 🆕 Tambah info mode & comeback
+  if (res.comeback) {
+    resultText = res.comeback;
+  }
+  const modeEmoji = res.matchMode === 'dramatic' ? '🔥 ' : res.matchMode === 'highScoring' ? '⚡ ' : '';
+  document.querySelector('.result-note').innerText = modeEmoji + resultText;
 
   const statRows = document.querySelectorAll('.stats-box .stat-row');
   statRows[0].querySelector('.stat-val:first-child').innerText = `${res.possession.A}%`;
