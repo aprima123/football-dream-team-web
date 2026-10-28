@@ -5,13 +5,16 @@ const state = {
   allPlayers: [],
   poolA: [],
   poolB: [],
-  selectedSlot: null,   // elemen DOM slot (starter ATAU bench) yang dipilih
+  selectedSlot: null,
   activeTeam: null,
   teamA: {},
   teamB: {},
-  benchA: {},           // 🆕 { "0": playerObj, "1": playerObj, ... }
+  benchA: {},
   benchB: {}
 };
+
+// 🆕 Simpan hasil match sementara, ditampilkan saat tombol "Lihat Statistik" diklik
+let pendingResult = null;
 
 // ============================================================
 // NAVIGASI SCREEN
@@ -30,6 +33,17 @@ function goTo(screenId) {
 
   state.selectedSlot = null;
   document.querySelectorAll('.slot').forEach(s => s.classList.remove('selected'));
+
+  // 🆕 Reset tombol "Lihat Statistik" setiap pindah screen
+  if (screenId !== 'screen-loading') {
+    const actionEl = document.getElementById('fulltime-action');
+    if (actionEl) actionEl.classList.remove('show');
+    const clockEl = document.getElementById('live-clock');
+    if (clockEl) {
+      clockEl.innerText = "0'";
+      clockEl.classList.remove('fulltime');
+    }
+  }
 
   updateDraftStatus(); 
 }
@@ -630,14 +644,45 @@ function runLiveMatchAnimation(result) {
       eventIndex++;
     }
 
-    if (currentMinute >= matchMinutes) {
+        if (currentMinute >= matchMinutes) {
       clearInterval(timer);
+      
+      // 🆕 Jangan auto-jump. Tampilkan tombol "Lihat Statistik"
+      pendingResult = result;
+      
+      // Ubah jam jadi "FT" (Full-Time)
+      clockEl.innerText = "FT";
+      clockEl.classList.add('fulltime');
+      
+      // Tampilkan tombol setelah 800ms (efek dramatis)
       setTimeout(() => {
-        renderResult(result);
-        goTo('screen-result');
-      }, 1500);
+        const actionEl = document.getElementById('fulltime-action');
+        if (actionEl) actionEl.classList.add('show');
+        
+        // Auto-scroll ke tombol
+        actionEl?.scrollIntoView({ behavior: 'smooth', block: 'end' });
+      }, 800);
     }
   }, intervalTime);
+}
+
+// 🆕 Fungsi untuk pindah ke screen Result saat tombol diklik
+function goToResult() {
+  if (!pendingResult) return;
+  
+  // Reset UI loading screen
+  const clockEl = document.getElementById('live-clock');
+  const actionEl = document.getElementById('fulltime-action');
+  if (clockEl) {
+    clockEl.innerText = "0'";
+    clockEl.classList.remove('fulltime');
+  }
+  if (actionEl) actionEl.classList.remove('show');
+  
+  // Render & pindah
+  renderResult(pendingResult);
+  pendingResult = null; // Reset
+  goTo('screen-result');
 }
 
 function simulateMatch(teamA, teamB) {
